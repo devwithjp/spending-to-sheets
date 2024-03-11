@@ -1,19 +1,15 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/sheets/v4.dart' as sheets;
-import 'package:googleapis_auth/auth_io.dart' as auth;
-// import 'package:url_launcher/url_launcher_string.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:intl/intl.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'dart:io' show Platform;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 
 void main() async {
   runApp(ExpenseTrackerApp());
 }
-// 129638651997-9js0p8j9j0nitgoabs2md2qvtio9v8b5.apps.googleusercontent.com
 class ExpenseTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -40,6 +36,7 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
   TextEditingController _paidToController = TextEditingController();
   TextEditingController _reasonController = TextEditingController();
 
+  final filename = "My Spendings Sheet";
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
       scopes: [
@@ -48,6 +45,7 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
         'https://www.googleapis.com/auth/spreadsheets'
       ]
   );
+
 
   bool _isLoggedIn = false;
 
@@ -59,7 +57,11 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
 
   void _checkIfLoggedIn() {
     setState(() {
+      print("SSSSSSSSSSSSSSSSSSSSSss");
+      print(_googleSignIn.isSignedIn());
       _isLoggedIn = _googleSignIn.currentUser != null;
+
+
     });
   }
 
@@ -198,59 +200,19 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
     );
   }
 
-
-
-
-    // Future<void> signIn() async {
-    //   try{
-        // final scopes = [
-        //   'email',
-        //   'https://www.googleapis.com/auth/drive.file',
-        //   'https://www.googleapis.com/auth/spreadsheets'
-        // ];
-        //
-        // GoogleSignIn googleSignIn = GoogleSignIn(
-        //   clientId:
-        //   "129638651997-9js0p8j9j0nitgoabs2md2qvtio9v8b5.apps.googleusercontent.com.apps.googleusercontent.com",
-        //   scopes: scopes
-        // );
-
-
-        // if ( kIsWeb ||Platform.isAndroid ) {
-        //    googleSignIn = GoogleSignIn(
-        //       clientId:
-        //       "129638651997-9js0p8j9j0nitgoabs2md2qvtio9v8b5.apps.googleusercontent.com.apps.googleusercontent.com",
-        //       scopes: scopes
-        //   );
-        // }
-
-        //IOS
-        // if (Platform.isIOS || Platform.isMacOS) {
-        //   final googleSignIn = GoogleSignIn(
-        //     clientId:
-        //     "YOUR_CLIENT_ID.apps.googleusercontent.com",
-        //     scopes: [
-        //       'email',
-        //     ],
-        //   );
-        // }
-
-      //   final GoogleSignInAccount? googleAccount = await googleSignIn.signIn();
-      //   final GoogleSignInAuthentication  = await googleAccount!.authentication;
-      //   print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxxxx");
-      //   print(GoogleSignInAuthentication);
-      //   print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxxxx");
-      //
-      // }catch (e) {
-      //   print('Error submitting data to Google Sheet: $e');
-      //   // Handle any errors that occur during the submission
-    //   }
-    // }
+  @override
+  void clear() {
+    // Dispose controllers to prevent memory leaks
+    _amountController.clear();
+    _paymentModeController.clear();
+    _paidToController.clear();
+    _reasonController.clear();
+  }
 
   Future<String> createSpreadsheet(sheets.SheetsApi sheetsApi) async {
     final spreadsheet = sheets.Spreadsheet.fromJson({
       'properties': {
-        'title': 'My Spendings',
+        'title': filename,
       },
       'sheets': [
         {
@@ -282,15 +244,25 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
 
   Future<void> submitDataToGoogleSheet() async {
     try {
-      // final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      // final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
-      //
-      // final client = http.Client();
+
+      var spreadsheetId;
       var httpClient = (await _googleSignIn.authenticatedClient());
       final sheetsApi = await sheets.SheetsApi(httpClient!);
 
+      final driveApi = await drive.DriveApi(httpClient);
 
-      final spreadsheetId = await createSpreadsheet(sheetsApi);
+      // Retrieve a list of all files in the user's Drive
+      final response = await driveApi.files.list(q: "name = '$filename'");
+
+      final exists = response.files?.isNotEmpty ?? false;
+      print(exists);
+      if(!exists){
+        spreadsheetId = await createSpreadsheet(sheetsApi);
+      }
+      else{
+        spreadsheetId = await response.files?.firstWhere((element) => element.name == filename)?.id;
+      }
+
       print(spreadsheetId);
 
       final now = DateTime.now();
@@ -314,10 +286,11 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
         valueInputOption: 'RAW',
       );
 
+      clear();
+
       httpClient.close();
     }catch (e) {
           print('Error submitting data to Google Sheet: $e');
-          // Handle any errors that occur during the submission
         }
 
     }
