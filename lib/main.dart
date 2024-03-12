@@ -52,7 +52,8 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
   @override
   void initState() {
     super.initState();
-    _checkIfLoggedIn();
+    // _checkIfLoggedIn();
+    _handleSignIn();
   }
 
   void _checkIfLoggedIn() {
@@ -60,16 +61,19 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
       print("SSSSSSSSSSSSSSSSSSSSSss");
       print(_googleSignIn.isSignedIn());
       _isLoggedIn = _googleSignIn.currentUser != null;
-
-
     });
   }
 
   Future<void> _handleSignIn() async {
+    print("SIGNNNN INNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN");
     try {
       await _googleSignIn.signIn();
       _checkIfLoggedIn();
       print("Logged In");
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => FormPage()),
+      // );
     } catch (error) {
       print('Error signing in: $error');
     }
@@ -97,16 +101,16 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
         centerTitle: true,
       ),
       body: !_isLoggedIn  ?
-        ElevatedButton(
-          onPressed: _handleSignIn,
-          style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.purple,
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 32.0),
-          ),
-          child: Text('Sign in to Google'),
-        )
-            :SingleChildScrollView(
+        // ElevatedButton(
+        //   onPressed: _handleSignIn,
+        //   style: ElevatedButton.styleFrom(
+        //   backgroundColor: Colors.purple,
+        //   foregroundColor: Colors.white,
+        //   padding: EdgeInsets.symmetric(horizontal: 32.0),
+        //   ),
+        //   child: Text('Sign in to Google'),
+        // )
+            Text("Please login"):SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: Form(
@@ -114,13 +118,13 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Add Expense',
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                // Text(
+                //   'Add Expense',
+                //   style: TextStyle(
+                //     fontSize: 18.0,
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
                 SizedBox(height: 16.0),
                 TextFormField(
                   controller: _amountController,
@@ -179,7 +183,7 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(horizontal: 32.0),
                             ),
-                            child: Text('Submit Spendings to Sheets'),
+                            child: Text('Add Expense to Sheets'),
                           ),
                           ElevatedButton(
                             onPressed: _handleSignOut,
