@@ -5,6 +5,16 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:intl/intl.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'dart:convert';
+import 'package:googleapis_auth/googleapis_auth.dart' as auth show AuthClient;
+
+final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/drive.file',
+      'https://www.googleapis.com/auth/spreadsheets'
+    ]
+);
 
 
 void main() async {
@@ -14,9 +24,9 @@ class ExpenseTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Expense Tracker',
+      title: 'Spendings To Sheet',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.purple,
       ),
       home: ExpenseTrackerHome(),
     );
@@ -25,10 +35,73 @@ class ExpenseTrackerApp extends StatelessWidget {
 
 class ExpenseTrackerHome extends StatefulWidget {
   @override
-  _ExpenseTrackerHomeState createState() => _ExpenseTrackerHomeState();
+  ExpenseTrackerHomeState createState() => ExpenseTrackerHomeState();
 }
 
-class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
+class ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
+
+
+  bool _isLoggedIn = false;
+
+
+  // void _checkIfLoggedIn() {
+  //   setState(() {
+  //     print("SSSSSSSSSSSSSSSSSSSSSss");
+  //     print(_googleSignIn.isSignedIn());
+  //     _isLoggedIn = _googleSignIn.currentUser != null;
+  //   });
+  // }
+  Future<void> _handleSignIn() async {
+    print("SIGNNNN INNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN");
+    try {
+      final GoogleSignInAccount? googleAccount = await _googleSignIn.signIn();
+      // final GoogleSignInAuthentication googleAuthentication = await googleAccount!.authentication;
+      // _checkIfLoggedIn();
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => FormPage()),
+      );
+    } catch (error) {
+      print('Error signing in: $error');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // _checkIfLoggedIn();
+    _handleSignIn();
+  }
+
+
+
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+        title: Text(
+        'Spendings To Sheet',
+        style: TextStyle(
+        fontSize: 20.0,
+        fontWeight: FontWeight.bold,
+    ),
+    ),
+    centerTitle: true,
+    ),);
+  }
+
+}
+
+class FormPage extends StatefulWidget {
+  //
+  // final googleAuth;
+  // FormPage({required this.googleAuth});
+
+  @override
+  _FormPageState createState() => _FormPageState();
+}
+
+class _FormPageState extends State<FormPage> {
   final _formKey = GlobalKey<FormState>();
 
   TextEditingController _amountController = TextEditingController();
@@ -38,61 +111,12 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
 
   final filename = "My Spendings Sheet";
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-      scopes: [
-        'email',
-        'https://www.googleapis.com/auth/drive.file',
-        'https://www.googleapis.com/auth/spreadsheets'
-      ]
-  );
-
-
-  bool _isLoggedIn = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // _checkIfLoggedIn();
-    _handleSignIn();
-  }
-
-  void _checkIfLoggedIn() {
-    setState(() {
-      print("SSSSSSSSSSSSSSSSSSSSSss");
-      print(_googleSignIn.isSignedIn());
-      _isLoggedIn = _googleSignIn.currentUser != null;
-    });
-  }
-
-  Future<void> _handleSignIn() async {
-    print("SIGNNNN INNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN");
-    try {
-      await _googleSignIn.signIn();
-      _checkIfLoggedIn();
-      print("Logged In");
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => FormPage()),
-      // );
-    } catch (error) {
-      print('Error signing in: $error');
-    }
-  }
-
-  Future<void> _handleSignOut() async {
-    try {
-      await _googleSignIn.disconnect();
-      _checkIfLoggedIn();
-    } catch (error) {
-      print('Error signing out: $error');
-    }
-  }
 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Expense Tracker',
+          'Spendings To Sheet',
           style: TextStyle(
             fontSize: 20.0,
             fontWeight: FontWeight.bold,
@@ -100,17 +124,10 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
         ),
         centerTitle: true,
       ),
-      body: !_isLoggedIn  ?
-        // ElevatedButton(
-        //   onPressed: _handleSignIn,
-        //   style: ElevatedButton.styleFrom(
-        //   backgroundColor: Colors.purple,
-        //   foregroundColor: Colors.white,
-        //   padding: EdgeInsets.symmetric(horizontal: 32.0),
-        //   ),
-        //   child: Text('Sign in to Google'),
-        // )
-            Text("Please login"):SingleChildScrollView(
+      body:
+
+        //     Text("Please login"):
+      SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: Form(
@@ -204,7 +221,16 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
     );
   }
 
-  @override
+  Future<void> _handleSignOut() async {
+    try {
+      await _googleSignIn.disconnect();
+      Navigator.pop(context);
+      // _checkIfLoggedIn();
+    } catch (error) {
+      print('Error signing out: $error');
+    }
+  }
+
   void clear() {
     // Dispose controllers to prevent memory leaks
     _amountController.clear();
@@ -232,7 +258,7 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
                     {'userEnteredValue': {'stringValue': 'Mode of Payment'}},
                     {'userEnteredValue': {'stringValue': 'Paid To'}},
                     {'userEnteredValue': {'stringValue': 'Reason'}},
-                    {'userEnteredValue': {'stringValue': 'Date and Time'}}, // Added field for date and time
+                    {'userEnteredValue': {'stringValue': 'Date and Time'}},
                   ],
                 },
               ],
@@ -248,9 +274,12 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
 
   Future<void> submitDataToGoogleSheet() async {
     try {
-
       var spreadsheetId;
-      var httpClient = (await _googleSignIn.authenticatedClient());
+      final auth.AuthClient? httpClient = await  _googleSignIn.authenticatedClient();
+
+      print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+      print(httpClient);
+
       final sheetsApi = await sheets.SheetsApi(httpClient!);
 
       final driveApi = await drive.DriveApi(httpClient);
@@ -264,7 +293,7 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
         spreadsheetId = await createSpreadsheet(sheetsApi);
       }
       else{
-        spreadsheetId = await response.files?.firstWhere((element) => element.name == filename)?.id;
+        spreadsheetId = await response.files?.firstWhere((element) => element.name == filename).id;
       }
 
       print(spreadsheetId);
@@ -292,7 +321,7 @@ class _ExpenseTrackerHomeState extends State<ExpenseTrackerHome> {
 
       clear();
 
-      httpClient.close();
+      // httpClient.close();
     }catch (e) {
           print('Error submitting data to Google Sheet: $e');
         }
